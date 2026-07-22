@@ -58,44 +58,178 @@ This project demonstrates the deployment and integration of a Java web applicati
 - RabbitMQ
 - Git
 
-## ⚙️ Project Workflow
+## 📋 Prerequisites
 
-1. Provision multiple virtual machines using **Vagrant**.
-2. Configure private networking and hostnames using **Vagrant Host Manager**.
-3. Deploy MariaDB as the application database.
-4. Configure Memcached for application caching.
-5. Configure RabbitMQ as a message broker.
-6. Build and deploy the Java application to Apache Tomcat.
-7. Configure Nginx as a reverse proxy.
-8. Access the application through the Nginx server.
+Before starting this project, make sure you have installed:
 
-## 🚀 Getting Started
+- [Vagrant](https://developer.hashicorp.com/vagrant/downloads)
+- [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
+- Git
 
-### Clone the Repository
+You also need:
+
+- At least **8 GB RAM** recommended
+- Internet connection
+- Virtualization enabled in BIOS/UEFI
+- Vagrant Host Manager plugin
+
+Install the Vagrant Host Manager plugin:
+
+```bash
+vagrant plugin install vagrant-hostmanager
+```
+
+## 🚀 Deployment Steps
+
+Follow these steps in order.
+
+### 1️⃣ Clone the Repository
 
 ```bash
 git clone https://github.com/yudhaafrizarevi/vprofile-project-devops.git
 cd vprofile-project-devops
 ```
 
-### Start the Virtual Machines
+### 2️⃣ Start the Virtual Machines
+
+Provision all five virtual machines:
 
 ```bash
 vagrant up
 ```
 
-### Check VM Status
+Check the VM status:
 
 ```bash
 vagrant status
 ```
 
-### Access the Application
+The following VMs should be running:
 
-Open the following address in your browser:
+```text
+web01
+app01
+rmq01
+mc01
+db01
+```
+
+### 3️⃣ Configure the Database
+
+Login to the database server:
+
+```bash
+vagrant ssh db01
+```
+
+Follow the detailed instructions:
+
+```text
+docs/01-mariadb.md
+```
+
+MariaDB will be configured as the main database for the application.
+
+### 4️⃣ Configure Memcached
+
+Login to the Memcached server:
+
+```bash
+vagrant ssh mc01
+```
+
+Follow:
+
+```text
+docs/02-memcached.md
+```
+
+Memcached will be used as the application caching service.
+
+### 5️⃣ Configure RabbitMQ
+
+Login to the RabbitMQ server:
+
+```bash
+vagrant ssh rmq01
+```
+
+Follow:
+
+```text
+docs/03-rabbitmq.md
+```
+
+RabbitMQ will be used as the message broker.
+
+### 6️⃣ Configure Apache Tomcat
+
+Login to the application server:
+
+```bash
+vagrant ssh app01
+```
+
+Follow:
+
+```text
+docs/04-tomcat.md
+```
+
+Tomcat will be used to run the Java web application.
+
+### 7️⃣ Build and Deploy the Application
+
+Inside the `app01` VM:
+
+1. Install and configure Maven.
+2. Clone the application source code.
+3. Update the application configuration with the backend server details.
+4. Build the application using Maven.
+5. Deploy the generated WAR file to Tomcat.
+
+The application configuration should point to:
+
+```text
+MariaDB   → db01
+Memcached → mc01
+RabbitMQ  → rmq01
+```
+
+### 8️⃣ Configure Nginx
+
+Login to the web server:
+
+```bash
+vagrant ssh web01
+```
+
+Follow:
+
+```text
+docs/05-nginx.md
+```
+
+Nginx acts as a reverse proxy and forwards incoming traffic to the Tomcat application server.
+
+## 🌐 Access the Application
+
+After completing all configuration and deployment steps, open:
 
 ```text
 http://192.168.56.11
+```
+
+The request flow is:
+
+```text
+Client
+  ↓
+Nginx (web01)
+  ↓
+Tomcat (app01)
+  ↓
+MariaDB / Memcached / RabbitMQ
 ```
 
 ## 📸 Project Result
@@ -121,6 +255,20 @@ Detailed setup instructions for each service are available in the `docs/` direct
 - [RabbitMQ Setup](docs/03-rabbitmq.md)
 - [Tomcat Setup](docs/04-tomcat.md)
 - [Nginx Setup](docs/05-nginx.md)
+
+## 🛑 Stop the Virtual Machines
+
+To stop all virtual machines:
+
+```bash
+vagrant halt
+```
+
+To destroy all virtual machines:
+
+```bash
+vagrant destroy -f
+```
 
 ## 🎯 Project Objective
 
