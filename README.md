@@ -112,6 +112,10 @@ http://192.168.56.11
 
 ![User Details](screenshots/user-details.png)
 
+### RabbitMQ
+
+![RabbitMQ](screenshots/rabbitmq.png)
+
 ## 📚 Documentation
 
 Detailed setup instructions for each service are available in the `docs/` directory:
