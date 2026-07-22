@@ -1,54 +1,4 @@
-# 04 - Apache Tomcat Setup
-
-## 1. Login to the Tomcat VM
-
-```bash
-vagrant ssh app01
-```
-
-## 2. Verify Hosts Entry
-
-Check the hosts file:
-
-```bash
-cat /etc/hosts
-```
-
-Make sure the required VM hostnames are available.
-
-## 3. Update the Operating System
-
-```bash
-sudo dnf update -y
-```
-
-## 4. Install EPEL Repository
-
-```bash
-sudo dnf install epel-release -y
-```
-
-## 5. Install Java and Dependencies
-
-Install Java 17:
-
-```bash
-sudo dnf -y install java-17-openjdk java-17-openjdk-devel
-```
-
-Install Git and Wget:
-
-```bash
-sudo dnf install git wget -y
-```
-
-Verify Java:
-
-```bash
-java -version
-```
-
-## 6. Download Apache Tomcat
+## 14. Maven Setup
 
 Change to `/tmp`:
 
@@ -56,135 +6,133 @@ Change to `/tmp`:
 cd /tmp/
 ```
 
-Download Apache Tomcat:
+Download Maven:
 
 ```bash
-wget https://archive.apache.org/dist/tomcat/tomcat-10/v10.1.26/bin/apache-tomcat-10.1.26.tar.gz
+wget https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip
 ```
 
-Extract the archive:
+Extract Maven:
 
 ```bash
-tar xzvf apache-tomcat-10.1.26.tar.gz
+unzip apache-maven-3.9.9-bin.zip
 ```
 
-## 7. Create the Tomcat User
+Copy Maven to `/usr/local`:
 
 ```bash
-sudo useradd --home-dir /usr/local/tomcat --shell /sbin/nologin tomcat
+sudo cp -r apache-maven-3.9.9 /usr/local/maven3.9
 ```
 
-## 8. Copy Tomcat Files
-
-Create the Tomcat directory:
+Set Maven memory options:
 
 ```bash
-sudo mkdir -p /usr/local/tomcat
+export MAVEN_OPTS="-Xmx512m"
 ```
 
-Copy the Tomcat files:
+## 15. Download the Source Code
 
 ```bash
-sudo cp -r /tmp/apache-tomcat-10.1.26/* /usr/local/tomcat/
+git clone -b local https://github.com/hkhcoder/vprofile-project.git
 ```
 
-Change ownership:
+Enter the project directory:
 
 ```bash
-sudo chown -R tomcat:tomcat /usr/local/tomcat
+cd vprofile-project
 ```
 
-## 9. Create the Tomcat Systemd Service
+## 16. Update Application Configuration
 
-Create the service file:
+Edit the application configuration:
 
 ```bash
-sudo vi /etc/systemd/system/tomcat.service
+vim src/main/resources/application.properties
 ```
 
-Add the following configuration:
+Configure the backend services according to the infrastructure:
 
-```ini
-[Unit]
-Description=Tomcat
-After=network.target
-
-[Service]
-User=tomcat
-Group=tomcat
-WorkingDirectory=/usr/local/tomcat
-
-Environment=JAVA_HOME=/usr/lib/jvm/jre
-Environment=CATALINA_PID=/var/tomcat/%i/run/tomcat.pid
-Environment=CATALINA_HOME=/usr/local/tomcat
-Environment=CATALINA_BASE=/usr/local/tomcat
-
-ExecStart=/usr/local/tomcat/bin/catalina.sh run
-ExecStop=/usr/local/tomcat/bin/shutdown.sh
-
-RestartSec=10
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
+```properties
+jdbc.url=jdbc:mysql://db01:3306/accounts
+jdbc.username=admin
+jdbc.password=admin123
 ```
 
-## 10. Reload Systemd
+The application should also be configured to connect to:
+
+```text
+MariaDB    → db01
+Memcached  → mc01
+RabbitMQ   → rmq01
+```
+
+## 17. Build the Application
+
+Run the following command inside the `vprofile-project` repository:
 
 ```bash
-sudo systemctl daemon-reload
+/usr/local/maven3.9/bin/mvn install
 ```
 
-## 11. Start and Enable Tomcat
+After a successful build, the WAR file will be available inside:
+
+```text
+target/
+```
+
+## 18. Deploy the Application to Tomcat
+
+Stop Tomcat:
+
+```bash
+sudo systemctl stop tomcat
+```
+
+Remove the existing ROOT application:
+
+```bash
+sudo rm -rf /usr/local/tomcat/webapps/ROOT*
+```
+
+Copy the generated WAR file:
+
+```bash
+sudo cp target/vprofile-v2.war /usr/local/tomcat/webapps/ROOT.war
+```
+
+Start Tomcat:
 
 ```bash
 sudo systemctl start tomcat
-sudo systemctl enable tomcat
 ```
 
-Check the status:
+Set the correct ownership:
+
+```bash
+sudo chown -R tomcat:tomcat /usr/local/tomcat/webapps
+```
+
+Restart Tomcat:
+
+```bash
+sudo systemctl restart tomcat
+```
+
+Verify the Tomcat service:
 
 ```bash
 sudo systemctl status tomcat
 ```
 
-Verify that Tomcat is listening on port `8080`:
+## 19. Verify Application Deployment
+
+Check that Tomcat is listening on port `8080`:
 
 ```bash
 sudo ss -tulpn | grep 8080
 ```
 
-Expected:
-
-```text
-0.0.0.0:8080
-```
-
-## 12. Configure the Firewall
-
-Start and enable firewalld:
-
-```bash
-sudo systemctl start firewalld
-sudo systemctl enable firewalld
-```
-
-Check active zones:
-
-```bash
-sudo firewall-cmd --get-active-zones
-```
-
-Allow Tomcat port `8080`:
-
-```bash
-sudo firewall-cmd --permanent --add-port=8080/tcp
-sudo firewall-cmd --reload
-```
-
-## 13. Test Tomcat
-
-From `web01`:
+From `web01`, test the application:
 
 ```bash
 curl http://app01:8080
@@ -196,4 +144,4 @@ Or:
 curl http://192.168.56.12:8080
 ```
 
-If Tomcat is working, the server should return a response from Apache Tomcat.
+If the application is deployed successfully, Tomcat should return the application response.
