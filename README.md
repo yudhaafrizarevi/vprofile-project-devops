@@ -100,10 +100,6 @@ http://192.168.56.11
 
 ## 📸 Project Result
 
-### Login Page
-
-![Login Page](screenshots/login.png)
-
 ### Users List
 
 ![Users List](screenshots/users-list.png)
