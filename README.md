@@ -1,123 +1,149 @@
-# 🚀 VProfile Multi-VM DevOps Project
+````markdown
+# 🚀 VProfile Multi-VM DevOps Infrastructure
 
-A multi-VM DevOps infrastructure project built using **Vagrant and VirtualBox** to simulate a production-like application environment.
+> **A production-like multi-tier application infrastructure built with Vagrant, VirtualBox, and Linux.**
 
-This project demonstrates the deployment and integration of a Java web application with multiple backend services running on separate virtual machines.
+This project demonstrates the deployment and integration of a Java web application across a distributed multi-VM infrastructure.
 
-The infrastructure consists of:
+Each infrastructure component runs on a dedicated virtual machine, creating a production-like environment with separated responsibilities for:
 
-- Nginx as a reverse proxy
-- Apache Tomcat as the application server
-- MariaDB as the database server
-- Memcached as the caching server
-- RabbitMQ as the message broker
+- Web traffic management
+- Application processing
+- Database storage
+- Application caching
+- Asynchronous messaging
+
+The complete infrastructure is designed to demonstrate practical DevOps, Linux system administration, networking, and application deployment concepts.
 
 ---
 
 ## 🏗️ Architecture
 
 ```text
-                    ┌──────────────┐
-                    │    Client    │
-                    └──────┬───────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │    Nginx     │
-                    │    web01     │
-                    │192.168.56.11 │
-                    └──────┬───────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │    Tomcat    │
-                    │    app01     │
-                    │192.168.56.12 │
-                    └──────┬───────┘
-                           │
-          ┌────────────────┼────────────────┐
-          │                │                │
-          ▼                ▼                ▼
-     ┌─────────┐     ┌───────────┐    ┌──────────┐
-     │ MariaDB │     │ Memcached │    │ RabbitMQ │
-     │  db01   │     │   mc01    │    │  rmq01   │
-     │ .15     │     │   .14      │    │   .13    │
-     └─────────┘     └───────────┘    └──────────┘
-```
+                              ┌──────────────┐
+                              │    CLIENT    │
+                              └──────┬───────┘
+                                     │
+                                     │ HTTP :80
+                                     ▼
+                         ┌──────────────────────┐
+                         │        web01         │
+                         │        NGINX          │
+                         │    Reverse Proxy      │
+                         │   192.168.56.11       │
+                         └──────────┬───────────┘
+                                    │
+                                    │ HTTP :8080
+                                    ▼
+                         ┌──────────────────────┐
+                         │        app01         │
+                         │    Apache Tomcat     │
+                         │   Java Web Application│
+                         │   192.168.56.12       │
+                         └──────────┬───────────┘
+                                    │
+                 ┌──────────────────┼──────────────────┐
+                 │                  │                  │
+                 ▼                  ▼                  ▼
+        ┌────────────────┐ ┌────────────────┐ ┌────────────────┐
+        │      db01      │ │      mc01      │ │      rmq01      │
+        │    MariaDB     │ │   Memcached    │ │    RabbitMQ    │
+        │ 192.168.56.15  │ │ 192.168.56.14  │ │ 192.168.56.13  │
+        └────────────────┘ └────────────────┘ └────────────────┘
+````
 
-### Request Flow
+---
+
+## 🔄 Request Flow
 
 ```text
 Client
-  │
-  ▼
-Nginx (web01)
-  │
-  ▼
-Apache Tomcat (app01)
-  │
-  ├──► MariaDB (db01)
-  │
-  ├──► Memcached (mc01)
-  │
-  └──► RabbitMQ (rmq01)
+   │
+   ▼
+Nginx Reverse Proxy
+(web01:80)
+   │
+   ▼
+Apache Tomcat
+(app01:8080)
+   │
+   ├──► MariaDB
+   │    (db01:3306)
+   │
+   ├──► Memcached
+   │    (mc01:11211)
+   │
+   └──► RabbitMQ
+        (rmq01:5672)
 ```
 
 ---
 
-## 🖥️ Virtual Machines
+## 🖥️ Infrastructure Overview
 
-| VM | Role | Function | IP Address | Operating System |
-|---|---|---|---|---|
-| `web01` | Nginx | Reverse proxy and application entry point | `192.168.56.11` | Ubuntu 22.04 |
-| `app01` | Apache Tomcat | Runs the Java web application | `192.168.56.12` | CentOS Stream 9 |
-| `rmq01` | RabbitMQ | Message broker and message queue | `192.168.56.13` | CentOS Stream 9 |
-| `mc01` | Memcached | In-memory caching service | `192.168.56.14` | CentOS Stream 9 |
-| `db01` | MariaDB | Persistent database storage | `192.168.56.15` | CentOS Stream 9 |
+| VM      | Role                | Technology    | Operating System | Private IP      |
+| ------- | ------------------- | ------------- | ---------------- | --------------- |
+| `web01` | Web & Reverse Proxy | Nginx         | Ubuntu 22.04     | `192.168.56.11` |
+| `app01` | Application Server  | Apache Tomcat | CentOS Stream 9  | `192.168.56.12` |
+| `rmq01` | Message Broker      | RabbitMQ      | CentOS Stream 9  | `192.168.56.13` |
+| `mc01`  | Cache Server        | Memcached     | CentOS Stream 9  | `192.168.56.14` |
+| `db01`  | Database Server     | MariaDB       | CentOS Stream 9  | `192.168.56.15` |
+
+All virtual machines communicate through the private network:
+
+```text
+192.168.56.0/24
+```
 
 ---
 
-## 🧩 Component Roles
+## 🧩 Component Architecture
 
 ### 🌐 web01 — Nginx Reverse Proxy
 
-**Nginx** acts as the entry point for incoming client requests.
+Nginx serves as the public-facing entry point for the application.
 
-Responsibilities:
+**Responsibilities:**
 
-- Receives HTTP requests from users.
-- Acts as a reverse proxy.
-- Forwards requests to the Tomcat application server.
-- Provides a single access point to the application.
+* Receives incoming HTTP requests.
+* Acts as a reverse proxy.
+* Forwards requests to the Tomcat application server.
+* Provides a single access point to the application.
 
 ```text
 Client
-   ↓
-Nginx (web01)
-   ↓
-Tomcat (app01)
+   │
+   ▼
+Nginx
+(web01)
+   │
+   ▼
+Tomcat
+(app01)
 ```
 
 ---
 
 ### ☕ app01 — Apache Tomcat Application Server
 
-**Apache Tomcat** is the application server responsible for running the Java web application.
+Apache Tomcat runs the Java web application.
 
-Responsibilities:
+**Responsibilities:**
 
-- Runs the Java application.
-- Processes application requests.
-- Connects the application to backend services.
-- Hosts the deployed `.war` application file.
+* Runs the Java application.
+* Processes application requests.
+* Connects the application to backend services.
+* Hosts the deployed `.war` application.
 
 The application is built using **Maven** and deployed to Tomcat as a `.war` file.
 
 ```text
 Nginx
-   ↓
-Tomcat
-   ↓
+   │
+   ▼
+Apache Tomcat
+   │
+   ▼
 Java Web Application
 ```
 
@@ -125,18 +151,19 @@ Java Web Application
 
 ### 🗄️ db01 — MariaDB Database Server
 
-**MariaDB** stores the application's persistent data.
+MariaDB provides persistent storage for the application.
 
-Responsibilities:
+**Responsibilities:**
 
-- Stores user data.
-- Stores application records.
-- Provides data persistence.
-- Handles database queries from the application.
+* Stores application data.
+* Stores user account information.
+* Handles database queries.
+* Provides persistent data storage.
 
 ```text
 Java Application
-       ↓
+       │
+       ▼
     MariaDB
 ```
 
@@ -144,80 +171,88 @@ Java Application
 
 ### ⚡ mc01 — Memcached Cache Server
 
-**Memcached** is used as an in-memory caching system.
+Memcached provides an in-memory caching layer for the application.
 
-Responsibilities:
+**Responsibilities:**
 
-- Stores frequently accessed data temporarily.
-- Reduces repeated database queries.
-- Improves application response time.
-- Reduces database workload.
+* Stores frequently accessed data temporarily.
+* Reduces repeated database queries.
+* Improves application response time.
+* Reduces database workload.
 
 ```text
 Java Application
-       ↓
+       │
+       ▼
    Memcached
-       ↓
- Faster data access
+       │
+       ▼
+ Faster Data Access
 ```
 
 ---
 
 ### 🐇 rmq01 — RabbitMQ Message Broker
 
-**RabbitMQ** is used as a message broker for asynchronous communication.
+RabbitMQ provides message queuing and asynchronous communication.
 
-Responsibilities:
+**Responsibilities:**
 
-- Handles message queuing.
-- Enables asynchronous communication between services.
-- Helps decouple application components.
-- Allows messages to be processed independently.
+* Handles message queues.
+* Enables asynchronous communication.
+* Decouples application components.
+* Allows messages to be processed independently.
 
 ```text
 Java Application
-       ↓
+       │
+       ▼
     RabbitMQ
-       ↓
+       │
+       ▼
   Message Queue
 ```
 
 ---
 
-## 🛠️ Technologies and Their Purpose
+## 🛠️ Technology Stack
 
-| Technology | Purpose |
-|---|---|
-| Vagrant | Automates the creation and management of virtual machines |
-| VirtualBox | Provides the virtualization platform |
-| Nginx | Acts as a reverse proxy and application entry point |
-| Apache Tomcat | Runs the Java web application |
-| Java 17 | Runtime environment for the Java application |
-| Maven | Builds and packages the Java application |
-| MariaDB | Stores persistent application data |
-| Memcached | Provides in-memory caching |
-| RabbitMQ | Handles message queuing and asynchronous communication |
-| Git | Used for source code management |
-| Linux | Operating system environment for the infrastructure |
+| Technology    | Purpose                                  |
+| ------------- | ---------------------------------------- |
+| Vagrant       | Automated VM provisioning and management |
+| VirtualBox    | Virtualization platform                  |
+| Nginx         | Reverse proxy and web entry point        |
+| Apache Tomcat | Java application server                  |
+| Java 17       | Application runtime environment          |
+| Maven         | Application build and packaging          |
+| MariaDB       | Persistent database storage              |
+| Memcached     | In-memory caching                        |
+| RabbitMQ      | Message broker and message queuing       |
+| Git           | Source code management                   |
+| Linux         | Server operating system environment      |
 
 ---
 
+# 🚀 Getting Started
+
 ## 📋 Prerequisites
 
-Before starting this project, make sure you have installed:
+Before starting the project, install the following:
 
-- [Vagrant](https://developer.hashicorp.com/vagrant/downloads)
-- [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
-- Git
+* [Vagrant](https://developer.hashicorp.com/vagrant/downloads)
+* [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
+* [Git](https://git-scm.com/)
 
-You also need:
+### Recommended System Requirements
 
-- At least **8 GB RAM** recommended
-- Internet connection
-- Virtualization enabled in BIOS/UEFI
-- Vagrant Host Manager plugin
+* Minimum 8 GB RAM
+* Internet connection
+* Hardware virtualization enabled in BIOS/UEFI
+* Vagrant Host Manager plugin installed
 
-Install the Vagrant Host Manager plugin:
+---
+
+## 🔌 Install Vagrant Host Manager
 
 ```bash
 vagrant plugin install vagrant-hostmanager
@@ -225,28 +260,31 @@ vagrant plugin install vagrant-hostmanager
 
 ---
 
-## 🚀 Deployment Steps
+# 🚀 Deployment
 
-Follow these steps in order.
-
-### 1️⃣ Clone the Repository
+## 1️⃣ Clone the Repository
 
 ```bash
 git clone https://github.com/yudhaafrizarevi/vprofile-project-devops.git
+```
+
+Navigate to the project directory:
+
+```bash
 cd vprofile-project-devops
 ```
 
 ---
 
-### 2️⃣ Start the Virtual Machines
+## 2️⃣ Start the Infrastructure
 
-Provision all five virtual machines:
+Provision all virtual machines:
 
 ```bash
 vagrant up
 ```
 
-This will create:
+Vagrant will create the following infrastructure:
 
 ```text
 web01
@@ -262,102 +300,139 @@ Check the VM status:
 vagrant status
 ```
 
-All virtual machines should be running.
+Expected result:
+
+```text
+web01  running
+app01  running
+rmq01  running
+mc01   running
+db01   running
+```
 
 ---
 
-### 3️⃣ Configure MariaDB
+## 🔄 Deployment Workflow
 
-Login to the database server:
+```text
+vagrant up
+     │
+     ▼
+Create Virtual Machines
+     │
+     ▼
+Configure Private Networking
+     │
+     ▼
+Configure Hostnames
+     │
+     ▼
+Install Infrastructure Services
+     │
+     ├──► MariaDB
+     ├──► Memcached
+     ├──► RabbitMQ
+     ├──► Apache Tomcat
+     └──► Nginx
+     │
+     ▼
+Build Java Application
+     │
+     ▼
+Deploy WAR Application
+     │
+     ▼
+Application Ready
+```
+
+---
+
+# ⚙️ Service Configuration
+
+## 🗄️ 3. Configure MariaDB
+
+Access the database server:
 
 ```bash
 vagrant ssh db01
 ```
 
-Follow the detailed instructions:
+Detailed configuration guide:
 
 ```text
 docs/01-mariadb.md
 ```
 
-MariaDB will be configured as the main database for the application.
-
-The database stores persistent application data such as user accounts and application records.
+MariaDB is used as the primary database for persistent application data.
 
 ---
 
-### 4️⃣ Configure Memcached
+## ⚡ 4. Configure Memcached
 
-Login to the Memcached server:
+Access the cache server:
 
 ```bash
 vagrant ssh mc01
 ```
 
-Follow:
+Detailed configuration guide:
 
 ```text
 docs/02-memcached.md
 ```
 
-Memcached will be configured as the application's caching service.
-
-It helps reduce database load and improve application performance.
+Memcached is used to reduce database load and improve application performance.
 
 ---
 
-### 5️⃣ Configure RabbitMQ
+## 🐇 5. Configure RabbitMQ
 
-Login to the RabbitMQ server:
+Access the message broker:
 
 ```bash
 vagrant ssh rmq01
 ```
 
-Follow:
+Detailed configuration guide:
 
 ```text
 docs/03-rabbitmq.md
 ```
 
-RabbitMQ will be configured as the message broker.
-
-It provides message queuing and asynchronous communication between application components.
+RabbitMQ provides message queuing and asynchronous communication between application components.
 
 ---
 
-### 6️⃣ Configure Apache Tomcat
+## ☕ 6. Configure Apache Tomcat
 
-Login to the application server:
+Access the application server:
 
 ```bash
 vagrant ssh app01
 ```
 
-Follow:
+Detailed configuration guide:
 
 ```text
 docs/04-tomcat.md
 ```
 
-Tomcat will be configured to run the Java web application.
-
-The application will be built using Maven and deployed as a `.war` file.
+Tomcat is configured to run the Java web application.
 
 ---
 
-### 7️⃣ Build and Deploy the Application
+## 📦 7. Build and Deploy the Application
 
 Inside the `app01` VM:
 
 1. Install and configure Maven.
 2. Clone the application source code.
-3. Update the application configuration.
-4. Configure the backend server details.
+3. Configure the application properties.
+4. Configure backend service connections.
 5. Build the application using Maven.
 6. Deploy the generated `.war` file to Tomcat.
 
-The application configuration connects to:
+The application connects to:
 
 ```text
 MariaDB   → db01
@@ -365,15 +440,18 @@ Memcached → mc01
 RabbitMQ  → rmq01
 ```
 
-The general application flow is:
+Application flow:
 
 ```text
 User Request
-     ↓
-Nginx
-     ↓
-Tomcat
-     ↓
+     │
+     ▼
+   Nginx
+     │
+     ▼
+   Tomcat
+     │
+     ▼
 Java Application
      │
      ├──► MariaDB
@@ -383,39 +461,44 @@ Java Application
 
 ---
 
-### 8️⃣ Configure Nginx
+## 🌐 8. Configure Nginx
 
-Login to the web server:
+Access the web server:
 
 ```bash
 vagrant ssh web01
 ```
 
-Follow:
+Detailed configuration guide:
 
 ```text
 docs/05-nginx.md
 ```
 
-Nginx acts as a reverse proxy and forwards incoming traffic to the Tomcat application server.
+Nginx acts as a reverse proxy and forwards incoming requests to the Tomcat application server.
 
-The final request flow is:
+Final request flow:
 
 ```text
 Client
-   ↓
-Nginx (web01)
-   ↓
-Tomcat (app01)
-   ↓
+   │
+   ▼
+Nginx
+(web01:80)
+   │
+   ▼
+Tomcat
+(app01:8080)
+   │
+   ▼
 Java Application
 ```
 
 ---
 
-## 🌐 Access the Application
+# 🌍 Application Access
 
-After completing all configuration and deployment steps, open:
+After completing the infrastructure configuration and application deployment, access the application through:
 
 ```text
 http://192.168.56.11
@@ -425,37 +508,93 @@ The application is accessed through the Nginx reverse proxy.
 
 ---
 
-## 📸 Project Result
+# 📊 Service Communication
 
-### Users List
+| Service       | Host    |    Port | Purpose                 |
+| ------------- | ------- | ------: | ----------------------- |
+| Nginx         | `web01` |    `80` | HTTP reverse proxy      |
+| Apache Tomcat | `app01` |  `8080` | Java application server |
+| RabbitMQ      | `rmq01` |  `5672` | Message broker          |
+| Memcached     | `mc01`  | `11211` | Application caching     |
+| MariaDB       | `db01`  |  `3306` | Database server         |
+
+---
+
+# 📸 Project Screenshots
+
+## Users List
 
 ![Users List](screenshots/users-list.png)
 
-### User Details
+---
+
+## User Details
 
 ![User Details](screenshots/user-details.png)
 
-### RabbitMQ
+---
+
+## RabbitMQ
 
 ![RabbitMQ](screenshots/rabbitmq.png)
 
 ---
 
-## 📚 Documentation
+# 📚 Documentation
 
-Detailed setup instructions for each service are available in the `docs/` directory:
+Detailed configuration guides are available in the `docs/` directory:
 
-- [MariaDB Setup](docs/01-mariadb.md)
-- [Memcached Setup](docs/02-memcached.md)
-- [RabbitMQ Setup](docs/03-rabbitmq.md)
-- [Tomcat Setup](docs/04-tomcat.md)
-- [Nginx Setup](docs/05-nginx.md)
+* [MariaDB Setup](docs/01-mariadb.md)
+* [Memcached Setup](docs/02-memcached.md)
+* [RabbitMQ Setup](docs/03-rabbitmq.md)
+* [Tomcat Setup](docs/04-tomcat.md)
+* [Nginx Setup](docs/05-nginx.md)
 
 ---
 
-## 🛑 Stop the Virtual Machines
+# 🧰 Vagrant Commands
 
-To stop all virtual machines:
+## Start All Virtual Machines
+
+```bash
+vagrant up
+```
+
+---
+
+## Check VM Status
+
+```bash
+vagrant status
+```
+
+---
+
+## Access a VM
+
+```bash
+vagrant ssh app01
+```
+
+---
+
+## Re-run Provisioning
+
+```bash
+vagrant provision
+```
+
+---
+
+## Reload a VM
+
+```bash
+vagrant reload app01
+```
+
+---
+
+## Stop All Virtual Machines
 
 ```bash
 vagrant halt
@@ -463,9 +602,7 @@ vagrant halt
 
 ---
 
-## 🗑️ Destroy the Virtual Machines
-
-To completely remove all virtual machines:
+## Destroy All Virtual Machines
 
 ```bash
 vagrant destroy -f
@@ -473,58 +610,165 @@ vagrant destroy -f
 
 ---
 
-## 🎯 Project Objective
+## Rebuild the Environment
 
-This project was created to demonstrate practical knowledge of:
-
-- Multi-VM infrastructure provisioning
-- Vagrant automation
-- VirtualBox virtualization
-- Linux server administration
-- Private network configuration
-- Hostname management
-- Reverse proxy configuration
-- Java application server deployment
-- Maven application build process
-- Database integration
-- In-memory caching
-- Message broker configuration
-- Basic DevOps infrastructure architecture
-
----
-
-## 📌 Project Summary
-
-This project simulates a production-like application infrastructure where each service is deployed on a dedicated virtual machine.
-
-The infrastructure is designed as follows:
-
-```text
-                    ┌──────────────┐
-                    │    Client    │
-                    └──────┬───────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │    Nginx     │
-                    │    web01     │
-                    └──────┬───────┘
-                           │
-                           ▼
-                    ┌──────────────┐
-                    │    Tomcat    │
-                    │    app01     │
-                    └──────┬───────┘
-                           │
-          ┌────────────────┼────────────────┐
-          │                │                │
-          ▼                ▼                ▼
-       MariaDB         Memcached        RabbitMQ
-        db01              mc01            rmq01
+```bash
+vagrant destroy -f
+vagrant up
 ```
 
-This architecture demonstrates how different infrastructure components work together to support a Java web application.
+---
+
+# 🎯 Project Objectives
+
+This project demonstrates practical experience with:
+
+* Multi-VM infrastructure provisioning.
+* Vagrant automation.
+* VirtualBox virtualization.
+* Linux server administration.
+* Private network configuration.
+* Hostname management.
+* Reverse proxy configuration.
+* Java application server deployment.
+* Maven application build and packaging.
+* Database integration.
+* In-memory caching.
+* Message broker configuration.
+* Distributed application architecture.
+* Basic DevOps infrastructure practices.
 
 ---
 
-⭐ This project is part of my DevOps learning portfolio.
+# 🎓 Skills Demonstrated
+
+## Infrastructure & DevOps
+
+* Infrastructure provisioning
+* Virtual machine management
+* Infrastructure as Code concepts
+* Reproducible environment deployment
+* Multi-tier architecture design
+
+## Linux Administration
+
+* Package management
+* Service management with `systemctl`
+* Linux networking
+* Log analysis
+* Process and port troubleshooting
+
+## Networking
+
+* Private network configuration
+* Inter-server communication
+* Hostname resolution
+* Reverse proxy architecture
+* TCP connectivity testing
+
+## Application Deployment
+
+* Java application deployment
+* Apache Tomcat configuration
+* Maven build process
+* WAR application deployment
+* Backend service integration
+
+---
+
+# 📌 Project Summary
+
+This project simulates a production-like multi-tier application infrastructure where each major service runs on an independent virtual machine.
+
+```text
+                     ┌──────────────┐
+                     │    CLIENT    │
+                     └──────┬───────┘
+                            │
+                            ▼
+                     ┌──────────────┐
+                     │    NGINX     │
+                     │    web01     │
+                     └──────┬───────┘
+                            │
+                            ▼
+                     ┌──────────────┐
+                     │    TOMCAT    │
+                     │    app01     │
+                     └──────┬───────┘
+                            │
+             ┌──────────────┼──────────────┐
+             │              │              │
+             ▼              ▼              ▼
+          MariaDB       Memcached       RabbitMQ
+           db01            mc01           rmq01
+```
+
+This architecture demonstrates how web, application, database, caching, and messaging components can work together to support a distributed Java web application.
+
+---
+
+# ⭐ Portfolio Project
+
+This project is part of my hands-on DevOps learning portfolio, demonstrating practical experience in:
+
+* Linux
+* Virtualization
+* Infrastructure Provisioning
+* Networking
+* Application Deployment
+* Reverse Proxy Configuration
+* Database Services
+* Caching
+* Message Queuing
+
+---
+
+## 👨‍💻 Author
+
+### Yudha Afriza Revi
+
+DevOps and Cloud Infrastructure enthusiast focused on:
+
+* Linux System Administration
+* Infrastructure as Code
+* Automation
+* Virtualization
+* Networking
+* Application Deployment
+
+🔗 GitHub:
+
+https://github.com/yudhaafrizarevi
+
+---
+
+## 📄 License
+
+This project is intended for educational and portfolio purposes.
+
+````
+
+**Catatan:** README ini sudah saya sesuaikan dengan project yang kamu kirim: `MariaDB`, `Memcached`, `RabbitMQ`, `Apache Tomcat`, dan `Nginx`, dengan 5 VM dan IP yang kamu gunakan.
+
+Sebelum push ke GitHub, pastikan folder screenshot memang ada:
+
+```text
+screenshots/
+├── users-list.png
+├── user-details.png
+└── rabbitmq.png
+````
+
+dan folder dokumentasi:
+
+```text
+docs/
+├── 01-mariadb.md
+├── 02-memcached.md
+├── 03-rabbitmq.md
+├── 04-tomcat.md
+└── 05-nginx.md
+```
+
+Kalau file atau folder tersebut belum ada, hapus dulu bagian link/screenshot-nya dari README agar tidak menampilkan broken links di GitHub.
